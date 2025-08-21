@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Downloader</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>YT video Downloader</h2>
+        <input type="text" id="url" placeholder="Paste video URL here" required>
+        <button onclick="getInfo()">Get Video Info</button>
+           <!-- Loading Overlay -->
+        <div id="loading" class="loading-overlay" style="display:none;">
+            <div class="spinner"></div>
+                <p style="color:white;">Please wait while processing...</p>
+        </div>
+        <div class="preview" id="preview" style="display:none;">
+            <p id="title"></p>
+            <img id="thumbnail" alt="Thumbnail">
+            <select id="format"></select>
+            <button onclick="downloadVideo()">Download</button>
+        </div>
+    </div>
+ 
+
+<script>
+    function showLoading() {
+        console.log("🔵 showLoading() called – displaying spinner");
+        document.getElementById("loading").style.display = "flex";
+    }
+
+    function hideLoading() {
+        console.log("🟢 hideLoading() called – hiding spinner");
+        document.getElementById("loading").style.display = "none";
+    }
+
+    // Fetch video info
+    function getInfo() {
+        console.log("➡️ getInfo() triggered");
+        let url = document.getElementById("url").value;
+        let formData = new FormData();
+        formData.append("url", url);
+
+        showLoading();
+
+        fetch("/info", { method: "POST", body: formData })
+            .then(res => res.json())
+            .then(data => {
+                hideLoading();
+                console.log("✅ Response from /info:", data);
+
+                if (data.error) {
+                    alert("Error: " + data.error);
+                    return;
+                }
+
+                document.getElementById("preview").style.display = "block";
+                document.getElementById("title").innerText = data.title;
+                document.getElementById("thumbnail").src = data.thumbnail;
+
+                // Fill the formats dropdown
+                let formatSelect = document.getElementById("format");
+                formatSelect.innerHTML = "";
+                data.formats.forEach(f => {
+                    let opt = document.createElement("option");
+                    let sizeLabel = f.filesize ? `${f.filesize} MB` : "Unknown size";
+                    opt.value = f.format_id;
+                    opt.dataset.streamType = f.stream_type;
+                    opt.textContent = `${f.resolution} (${f.ext}) - ${sizeLabel}`;
+                    formatSelect.appendChild(opt);
+                });
+
+
+            })
+            .catch(err => {
+                hideLoading();
+                console.error("❌ Error fetching /info:", err);
+                alert("Error: " + err);
+            });
+    }
+
+    // Download video
+        function downloadVideo() {
+            console.log("➡️ downloadVideo() triggered");
+
+            let url = document.getElementById("url").value;
+            let formatSelect = document.getElementById("format");
+            let selected = formatSelect.options[formatSelect.selectedIndex];
+            let formatId = selected.value;
+            let streamType = selected.dataset.streamType;
+
+            let formData = new FormData();
+            formData.append("url", url);
+            formData.append("format_id", formatId);
+            formData.append("stream_type", streamType);
+
+            showLoading();
+
+            fetch("/download", { method: "POST", body: formData })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(errMsg => {
+                            throw new Error("Server error: " + errMsg);
+                        });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    hideLoading();
+                    console.log("✅ File ready, triggering download");
+                    let a = document.createElement("a");
+                    a.href = window.URL.createObjectURL(blob);
+                    a.download = "YTvideoDownloader_video.mp4";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                })
+                .catch(err => {
+                    hideLoading();
+                    console.error("❌ Error during /download:", err);
+                    alert("Error: " + err.message);
+                });
+        }
+</script>
+
+</body>
+</html>
