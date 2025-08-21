@@ -17,7 +17,7 @@ def index():
     return render_template("index.html")
 
 
-# API to get video info
+# API to get video info 
 @app.route("/info", methods=["POST"])
 def info():
     url = request.form.get("url")
