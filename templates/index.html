@@ -5,22 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Downloader</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="about">
+        <h1>Youtube videos and shorts downloader for free</h1>
+        <p>paste url - get info - select quality - click download</p>
+    </div>
     <div class="container">
-        <h2>YT video Downloader</h2>
         <input type="text" id="url" placeholder="Paste video URL here" required>
-        <button onclick="getInfo()">Get Video Info</button>
+        <button onclick="getInfo()">Click me to get video info</button>
            <!-- Loading Overlay -->
         <div id="loading" class="loading-overlay" style="display:none;">
             <div class="spinner"></div>
-                <p style="color:white;">Please wait while processing...</p>
+                <p style="color:rgb(255, 0, 0);">Please wait while processing...</p>
         </div>
         <div class="preview" id="preview" style="display:none;">
             <p id="title"></p>
             <img id="thumbnail" alt="Thumbnail">
+            <p id="disclaimer" ></p>
             <select id="format"></select>
-            <button onclick="downloadVideo()">Download</button>
+            <button onclick="downloadVideo()">Click me to download video</button>
         </div>
     </div>
  
@@ -59,6 +64,7 @@
                 document.getElementById("preview").style.display = "block";
                 document.getElementById("title").innerText = data.title;
                 document.getElementById("thumbnail").src = data.thumbnail;
+                document.getElementById("disclaimer").innerHTML = "DISCLAIMER : downloaded videos does not support all type of video players !!!";
 
                 // Fill the formats dropdown
                 let formatSelect = document.getElementById("format");
