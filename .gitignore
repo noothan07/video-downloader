@@ -1,0 +1,37 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+venv/
+.env
+
+# Node.js (in case you add frontend later)
+node_modules/
+
+# yt-dlp downloads
+downloads/
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.flv
+*.webm
+
+# Archives & executables
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.exe
+
+# Logs & temp files
+*.log
+*.tmp
+*.swp
+
+# Build output
+dist/
+build/
