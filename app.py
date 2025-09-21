@@ -7,6 +7,12 @@ app = Flask(__name__)
 DOWNLOAD_FOLDER = "downloads"
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
+# ✅ Handle cookies from environment variable
+COOKIES_PATH = "cookies.txt"
+if "YOUTUBE_COOKIES" in os.environ:
+    with open(COOKIES_PATH, "w") as f:
+        f.write(os.environ["YOUTUBE_COOKIES"])
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -19,6 +25,11 @@ def info():
         return jsonify({"error": "No URL provided"}), 400
     try:
         ydl_opts = {"quiet": True, "no_warnings": True}
+
+        # Use cookies if available
+        if os.path.exists(COOKIES_PATH):
+            ydl_opts["cookiefile"] = COOKIES_PATH
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=False)
 
@@ -44,11 +55,9 @@ def info():
                 if not resolution or resolution not in allowed_resolutions:
                     continue
 
-                # Only keep video formats
                 if f.get("vcodec") != "none":
                     stream_type = "video+audio" if f.get("acodec") != "none" else "video-only"
 
-                    # File size
                     if f.get("filesize"):
                         size_mb = round(f["filesize"] / (1024 * 1024), 2)
                     elif f.get("filesize_approx"):
@@ -56,7 +65,6 @@ def info():
                     else:
                         size_mb = None
 
-                    # Keep best per resolution
                     if resolution not in best_by_res:
                         best_by_res[resolution] = {
                             "format_id": f.get("format_id"),
@@ -76,7 +84,6 @@ def info():
                                 "stream_type": stream_type,
                             }
 
-            # Sort in resolution order
             resolution_order = {"240p": 1, "480p": 2, "720p": 3, "1080p": 4, "1440p": 5, "2160p": 6}
             formats = sorted(best_by_res.values(), key=lambda x: resolution_order.get(x["resolution"], 999))
 
@@ -97,18 +104,20 @@ def download():
     if not url or not format_id:
         return "Missing data", 400
 
-    # always force mp4 output unless audio-only
-    output_path = os.path.join("downloads", f"{uuid.uuid4()}.mp4")
+    output_path = os.path.join(DOWNLOAD_FOLDER, f"{uuid.uuid4()}.mp4")
     try:
         ydl_opts = {
-            "outtmpl": output_path,  # ✅ exact filename
-            "merge_output_format": "mp4",  # ✅ ensures merge container is mp4
+            "outtmpl": output_path,
+            "merge_output_format": "mp4",
             "noplaylist": True,
             "quiet": False,
             "verbose": True,
         }
 
-        # ✅ choose format correctly
+        # Use cookies if available
+        if os.path.exists(COOKIES_PATH):
+            ydl_opts["cookiefile"] = COOKIES_PATH
+
         if stream_type == "video-only":
             ydl_opts["format"] = f"{format_id}+bestaudio/best"
         elif stream_type == "video+audio":
@@ -127,7 +136,6 @@ def download():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-        # ✅ check file exists before sending
         if not os.path.exists(output_path):
             return f"File not found after download: {output_path}", 500
 
